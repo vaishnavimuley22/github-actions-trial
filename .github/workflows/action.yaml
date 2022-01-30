@@ -1,0 +1,17 @@
+# This is our first GitHub Action
+
+# Providing name to this action
+name: First GitHub Action
+
+# Setting up a trigger (so on every push this action must run)
+on: push
+
+# Setting up a job which runs on ubuntu-latest runner
+# This job simply runs a message "Hello this is my first GithUb Action" and also shows the HOSTNAME
+jobs:
+  init:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Hello this is my first GithUb Action"
+      - run: echo $HOSTNAME
+      
