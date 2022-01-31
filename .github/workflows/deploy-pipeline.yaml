@@ -20,6 +20,20 @@ on:
 # As run_number will be unique to this repository
 # We also gave name to our release and a body as well which is nothing but an extended text
 # Then we mentioned whether it is a draft and a prerelease
+# Now to attach the artifact with the release we have a new step into the publish job named download artifacts. 
+# Just like upload artifacts there is a community action for download artifact as well. We passed the zipped-bundle to this.
+# But as we know that the zipped-bundle is being created in the build job we have to provide build job as a rerequisite to the publish job.
+# To upload a release asset we will be using a community action which requires GitHub Token for authentication. This also need some parameters.
+# First parameter required is an upload URL, this is going to be an end point of the specific release where it can put the artifact.
+# Since this is going to change from release to release, we are going to need to generate it in each workflow execution.
+# Fortunately this URL is an output of the create release step that we already have running. We can refer to this previous step using an ID. 
+# In GitHub Actions, IDs are unique identifiers for steps. So I have set create-release as the id for this step and reference that step to the upload_url. 
+# Next step is to provide an asset path which is just where in the runner the asset is now. Since we just pulled this zip bundle down , it is hoing to be in our main working directory.  
+# And it still can be called the same thing as it was when we created it. 
+# The next thing that we need t provide is the name and this is going to be the name that is going to appear on the release page.
+# So we need to name it something which will help people to know what's in it.
+# And last step is to give it a property called asset_content_type. 
+# This is going to be applications/zip because GitHub releases can be used to manage a lot of different types of libraries from RubyGems to container images.
 
 jobs:
   lint:
@@ -65,8 +79,10 @@ jobs:
           
   publish:
     runs-on: ubuntu-latest
+    needs: build
     steps:
       - name: create release
+        id: create-release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.github_token }}
@@ -76,3 +92,16 @@ jobs:
           body: New Release for ${{ github.sha }}
           draft: false
           prerelease: false
+      - name: download artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: zipped-bundle
+      - name: upload release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.github_token }}
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: ./${{ github.sha }}.zip
+          asset_name: source_code_with_libraries.zip
+          asset_content_type: application/zip
+        
