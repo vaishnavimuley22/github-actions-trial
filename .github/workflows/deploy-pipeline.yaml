@@ -1,0 +1,78 @@
+# Name of the workflow
+name: Deploy Lambda Function
+
+# Triggers on push operation on the main branch only
+on:
+  push:
+    branches:
+      - main
+
+# Defining the jobs
+# On push, this pipeline executes a lint job which runs on a ubuntu runner, checks out the latest code, sets up Python, installs flake8 which is a lint tool, and then runs a couple of lint checks
+# Next we have a build job that also euns on a ubuntu-latest runner, and needs lint as a pre-requisite. It also checks out the code, sets up Python.
+# For both of them, community action is being used. For python's community action version needs to be provided
+# Next, in function folder an upgraded version of pip is installed first and then requirements.txt file is checked. If it is there it is installed
+# Then, in the function folder a zip folder is beign created which is named on the GitHub commit SHA
+# Finally the artifact is getting archive by the name of zipped-bundle onto the mentioned path for which again a community action is used
+# After that to publish it and to create a release, a publish job is there which also runs on ubuntu-latest runner. Here a community action is used to create a release.
+# This action requires that we set an environmental variable called GitHub Token so that is set. This helps the runner to authenticate with the GitHub API to create the release.
+# We have also provided the tag name as a parameter, this needs to be unique for every release so we can either give the version but for this example run_number is used.
+# As run_number will be unique to this repository
+# We also gave name to our release and a body as well which is nothing but an extended text
+# Then we mentioned whether it is a draft and a prerelease
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with: 
+          python-version: 3.8
+      - name: Install libraries
+        run: pip install flake8
+      - name: Lint with flake8
+        run: |
+            cd function
+            flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+            flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with: 
+          python-version: 3.8
+      - name: Install required libraries
+        run: |
+            cd function
+            python -m pip install --upgrade pip
+            if [ -f requirements.txt ]; then pip install -r requirements.txt -t .; fi
+      - name: Create a zip bundle 
+        run: |
+            cd function 
+            zip -r ../${{ github.sha }}.zip .
+      - name: Archive artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: zipped-bundle
+          path: ${{ github.sha }}.zip
+          
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: create release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.github_token }}
+        with:
+          tag_name: ${{ secrets.run_number }} 
+          release_name: Release from ${{ secrets.run_number }}
+          body: New Release for ${{ github.sha }}
+          draft: false
+          prerelease: false
