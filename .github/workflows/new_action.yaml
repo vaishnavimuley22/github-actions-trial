@@ -12,7 +12,7 @@ on:
 # For both of them, community action is being used. For python's community action version needs to be provided
 # Next, in function folder an upgraded version of pip is installed first and then requirements.txt file is checked. If it is there it is installed
 # Then, in the function folder a zip folder is beign created which is named on the GitHub commit SHA
-# Finally the artifact is getting archieve by the name of zipped-bundle onto the mentioned path for which again a community action is used
+# Finally the artifact is getting archive by the name of zipped-bundle onto the mentioned path for which again a community action is used
 # This job will run on ubuntu latest version 
 jobs:
   build:
@@ -33,7 +33,7 @@ jobs:
         run: |
             cd function 
             zip -r ../${{ github.sha }}.zip .
-      - name: Archieve artifact
+      - name: Archive artifact
         uses: actions/upload-artifact@v2
         with:
           name: zipped-bundle
