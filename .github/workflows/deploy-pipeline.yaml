@@ -71,8 +71,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.github_token }}
         with:
-          tag_name: ${{ secrets.run_number }} 
-          release_name: Release from ${{ secrets.run_number }}
+          tag_name: ${{ github.run_number }} 
+          release_name: Release from ${{ github.run_number }}
           body: New Release for ${{ github.sha }}
           draft: false
           prerelease: false
